@@ -1,10 +1,8 @@
-#![allow(unused_imports)]
-#![allow(dead_code)]
-#![allow(unused_must_use)]
-#![allow(unused_mut)]
-#![allow(unused_variables)]
-#![allow(deprecated)]
+use bee::core::app::App;
 
-fn main() {
-    println!("Hello, world!");
+fn main() -> Result<(), eframe::Error> {
+    let options = eframe::NativeOptions {
+        ..Default::default()
+    };
+    eframe::run_native("bee", options, Box::new(|cc| Ok(Box::new(App::new(cc)))))
 }
