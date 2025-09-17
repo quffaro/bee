@@ -21,6 +21,8 @@ impl DocumentEngine {
         engine.run(format!(r"{}", parsing));
         let setup = include_str!("../busybee/busybee.scm");
         engine.run(format!(r"{}", setup));
+        let markdown = include_str!("../busybee/markdown.scm");
+        engine.run(format!(r"{}", markdown));
         Self {
             engine: Some(engine),
         }
