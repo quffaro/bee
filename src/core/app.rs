@@ -1,7 +1,7 @@
 use crate::core::document::Document;
 use eframe::egui;
 use ropey::Rope;
-use std::{any::TypeId, ops::Range};
+use std::{any::TypeId, ops::Range, path::PathBuf};
 
 #[derive(Default)]
 pub struct App {
@@ -22,8 +22,15 @@ impl App {
     // TODO preprocess is inherited and should have the same return
     pub fn save(&mut self) {
         if let Some(path) = rfd::FileDialog::new().save_file() {
-            if let Ok(buffer) = self.document.dump() {
-                std::fs::write(path, buffer);
+            match path.extension().and_then(|ext| ext.to_str()) {
+                Some("md") => {
+                    self.preprocess(path);
+                }
+                _ => {
+                    if let Ok(buffer) = self.document.dump() {
+                        std::fs::write(path, buffer);
+                    }
+                }
             }
         }
     }
@@ -43,10 +50,9 @@ impl App {
         self.document.lozenge()
     }
 
-    #[inline]
-    pub fn preprocess(&mut self) {
+    pub fn preprocess(&mut self, path: PathBuf) {
         if let Ok(buffer) = self.document.preprocess() {
-            std::fs::write("output.md", buffer);
+            std::fs::write(path, buffer);
         }
     }
 
@@ -55,7 +61,7 @@ impl App {
             self.lozenge();
         }
         if ctx.input(|i| i.key_pressed(egui::Key::Period) && i.modifiers.ctrl) {
-            self.preprocess()
+            self.preprocess(PathBuf::from("output.md"))
         }
         if ctx.input(|i| i.key_pressed(egui::Key::S) && i.modifiers.ctrl) {
             self.save()
