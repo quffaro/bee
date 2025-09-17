@@ -1,43 +1,19 @@
 use crate::{
     core::{
         buffer::Buffer,
-        model::{DocumentModel, Layout, article},
+        engine::DocumentEngine,
+        interface::DocumentModel,
+        stdlib::{Article, TodoList},
     },
     gui,
 };
-use catlog::zero::QualifiedName;
+use catlog::{
+    stdlib::th_category,
+    zero::{QualifiedName, name},
+};
 use eframe::egui::Id;
 use std::collections::HashMap;
-use steel::{SteelVal, rerrs::SteelErr, steel_vm::engine::Engine};
-
-pub struct DocumentEngine {
-    pub engine: Option<Engine>,
-}
-
-impl DocumentEngine {
-    fn startup() -> Self {
-        let mut engine = Engine::new();
-        let parsing = include_str!("../busybee/parsing.scm");
-        engine.run(format!(r"{}", parsing));
-        let setup = include_str!("../busybee/busybee.scm");
-        engine.run(format!(r"{}", setup));
-        let markdown = include_str!("../busybee/markdown.scm");
-        engine.run(format!(r"{}", markdown));
-        Self {
-            engine: Some(engine),
-        }
-    }
-
-    fn run(&mut self, input: String) -> Result<Vec<SteelVal>, SteelErr> {
-        self.engine.as_mut().unwrap().run(input)
-    }
-}
-
-impl Default for DocumentEngine {
-    fn default() -> Self {
-        DocumentEngine::startup()
-    }
-}
+use steel::{SteelErr, SteelVal};
 
 /// A document is an instance of a document model
 pub struct Document {
@@ -66,9 +42,9 @@ pub struct Document {
 
 impl Default for Document {
     fn default() -> Self {
-        let model = Box::new(article(catlog::stdlib::th_category().into()));
+        let model: Box<Article> = Default::default();
+        // let model = Box::new(article(catlog::stdlib::th_category().into()));
         // let model = Box::new(todo_list(catlog::stdlib::th_sym_monoidal_category().into()));
-
         let mut instance: HashMap<QualifiedName, Buffer> = HashMap::from_iter(
             model
                 .objects()
@@ -79,7 +55,7 @@ impl Default for Document {
             model
                 .objects()
                 .into_iter()
-                .map(|ob| (ob.clone(), Id::new(ob.to_string()))),
+                .map(|ob| (name(ob.clone()), Id::new(name(ob)))),
         );
         let parsed: HashMap<QualifiedName, Result<Vec<SteelVal>, SteelErr>> = Default::default();
         let engine: DocumentEngine = Default::default();
@@ -131,7 +107,10 @@ impl Document {
 
     pub fn insert(&mut self, value: &str) {
         if let Some(id) = self.focus {
-            let name = self.mapping.get_by_right(&id).expect("!");
+            let name = self
+                .mapping
+                .get_by_right(&id)
+                .expect(&format!("{:#?} {:#?}", &self.mapping, &id));
             if let Some(buffer) = self.instance.get_mut(name) {
                 buffer.rope.insert(buffer.current_ccursor, value);
                 buffer.ccursor_to_set = Some(buffer.current_ccursor + value.len());
@@ -146,7 +125,7 @@ impl Document {
             if let Ok(steel_vals) = value {
                 for value in steel_vals {
                     match value {
-                        SteelVal::StringV(s) => out.push_str(s),
+                        SteelVal::StringV(s) => out.push_str(&s),
                         _ => todo!(),
                     }
                 }
@@ -160,8 +139,8 @@ impl Document {
         self.insert("◊")
     }
 
-    #[inline]
-    pub fn layout(&self) -> Layout {
-        self.model.layout()
-    }
+    // #[inline]
+    // pub fn interface(&self) -> Interface {
+    //     self.model.interface()
+    // }
 }

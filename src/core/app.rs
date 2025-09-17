@@ -5,18 +5,13 @@ use std::{any::TypeId, ops::Range, path::PathBuf};
 
 #[derive(Default)]
 pub struct App {
-    document: Document,
+    pub document: Document,
 }
 
 impl App {
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let mut app = Default::default();
         app
-    }
-
-    #[inline]
-    pub fn render(&mut self, ctx: &eframe::egui::Context) {
-        self.document.render(ctx)
     }
 
     // TODO preprocess is inherited and should have the same return

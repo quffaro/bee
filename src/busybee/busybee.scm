@@ -41,8 +41,6 @@
   (if (and (mhash-contains? methods (target)) (mhash-contains? (mhash-ref methods (target)) tag-name))
       (mhash-ref (mhash-ref methods (target)) tag-name)
 	  identity))
-	  ; (begin (displayln methods)
-	  ; (error 'get-tag-handler (format "No handler found for tag ~a in format ~a" tag-name (target))))))
 
 (define-syntax define-tag
   (syntax-rules ()
