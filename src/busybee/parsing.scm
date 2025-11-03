@@ -8,7 +8,7 @@
 
 (define (char-whitespace? c)
     (or 
-	  ; (char=? c #\space) 
+	  (char=? c #\space) 
 	  (char=? c #\tab) 
       ; (char=? c #\newline) 
 	  ; (char=? c #\return)
@@ -27,11 +27,28 @@
          ; (skip-whitespace (cdr chars))]
         [else chars]))
 
+(define (read-braces-string chars)
+  (define (loop acc chars brace-depth)
+	(cond
+	  [(null? chars)
+	    (values (list->string (reverse acc)) '())]
+	  [(eq? (car chars) #\})
+	     (if (= brace-depth 0)
+		   (values (list->string (reverse acc)) (cdr chars))
+		   (loop (cons #\} acc) (cdr chars) (- brace-depth 1)))]
+	  [(eq? (car chars) #\{)
+	   (loop (cons #\{ acc) (cdr chars) (+ brace-depth 1))]
+	  [else
+		(loop (cons (car chars) acc) (cdr chars) brace-depth)]))
+  (loop '() chars 0))
+
+(read-braces-string (string->list "{\\int_{X}}"))
+
 (define (read-string chars)
    (define (loop acc chars)
-     (cond [(null? chars) (values (list->string (reverse acc)) '())]
-           [(char-whitespace? (car chars)) 
-            (values (list->string (reverse acc)) chars)]
+     (cond [(empty? chars) (values (list->string (reverse acc)) '())]
+           ; [(char-whitespace? (car chars)) 
+           ;  (values (list->string (reverse acc)) chars)]
            [(char-delimiter? (car chars))
             (values (list->string (reverse acc)) chars)]
 		   [(char=? (car chars) #\◊)
@@ -60,8 +77,9 @@
       (read-string chars)))
 
 (define (tokenize-loop chars acc)
-    (let ([chars (skip-whitespace chars)])
-      (cond 
+   (let ([chars (skip-whitespace chars)])
+      (cond
+		[(empty? chars) (reverse acc)]
         [(null? chars) (reverse acc)]
         [(char=? (car chars) #\() 
          (tokenize-loop (cdr chars) (cons 'LPAREN acc))]
@@ -79,6 +97,13 @@
 			  (char=? (car chars) #\◊)
 			  (char=? (cadr chars) #\'))
 		 (tokenize-loop (cddr chars) (cons 'VAR acc))]
+		[(and (>= (length chars) 2)
+          (char=? (car chars) #\◊)
+          (char=? (cadr chars) #\$))
+         (call-with-values
+           (lambda () (read-braces-string (cdddr chars)))
+           (lambda (content rest)
+             (tokenize-loop rest (cons (list 'LATEX content) acc))))]
 		[(char=? (car chars) #\◊)
 		 (tokenize-loop (cdr chars) (cons 'LOZENGE acc))]
 		[(char=? (car chars) #\newline)
@@ -98,9 +123,15 @@
 		   (lambda (str rest)
             (tokenize-loop rest (cons str acc))))])))
 
+; (tokenize-loop (string->list "becomes the following") '())
+
+; (parse "becomes the following... ◊b{hello} ◊${\\int_{X}d\\omega}")
+
+; (parse "◊b{Fraisse limits} are model-theoretic constructions for producing a suitable nice yet countably infinite structure out of substructures.")
+
 (define (parse val)
   (define tokens (tokenize-loop (string->list val) '()))
-
+	;;
   (define (parse-kwargs tokens)
   (define (loop acc tokens)
     (cond
@@ -108,7 +139,7 @@
       [(eq? (car tokens) 'RBRACKET) (values (reverse acc) (cdr tokens))]
       [else (loop (cons (car tokens) acc) (cdr tokens))]))
   (loop '() tokens))
-
+    ;;
   (define (parse-parens tokens)
     (define (loop acc tokens paren-depth)
       (cond
@@ -123,7 +154,22 @@
         [else
           (loop (cons (if (string? (car tokens)) (car tokens) (symbol->string (car tokens))) acc) (cdr tokens) paren-depth)]))
     (loop '() tokens 0))
-
+    ;;
+  (define (parse-braces tokens)
+    (define (loop acc tokens paren-depth)
+      (cond
+        [(empty? tokens)
+          (values (string-join (reverse acc) " ") '())]
+        [(eq? (car tokens) 'RBRACE)
+         (if (= paren-depth 0)
+             (values (string->expr (string-join (reverse acc) " ")) (cdr tokens))
+             (loop (cons "}" acc) (cdr tokens) (- paren-depth 1)))]
+        [(eq? (car tokens) 'LBRACE)
+         (loop (cons "{" acc) (cdr tokens) (+ paren-depth 1))]
+        [else
+          (loop (cons (if (string? (car tokens)) (car tokens) (symbol->string (car tokens))) acc) (cdr tokens) paren-depth)]))
+    (loop '() tokens 0))
+    ;;
   (define (parse-cmd tokens)
     (define head (string->symbol (car tokens)))
     (define tokens (cdr tokens))
@@ -169,13 +215,17 @@
 		  (lambda (content rest)
 			;;  TODO only taking out the first element of the list
 			(loop (cons (list 'var (car content)) acc) rest)))]
+	  [(and (pair? (car tokens)) (eq? (caar tokens) 'LATEX))
+		(loop (cons (list 'ltx (cadar tokens)) acc) (cdr tokens))]
+	  ; [(eq? (car tokens) 'LATEX) 
+		; (loop (list '$ (cadr tokens) acc) (cddr tokens))]
 	  [(and (eq? (car tokens) 'LOZENGE) (not (empty? (cdr tokens))))
 	    (cond
 		  [(eq? (cadr tokens) 'LPAREN)
   	       (call-with-values
   	         (lambda () (parse-parens (cddr tokens)))
   	         (lambda (content rest)
-  	           (loop (cons (list 'code content) acc) rest)))]
+  	           (loop (cons (list 'code content) acc) rest)))] 
 		  [else
   	        (call-with-values
   		      (lambda () (parse-cmd (cdr tokens)))
