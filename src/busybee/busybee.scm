@@ -6,11 +6,12 @@
 		 register-tag!
 		 fetch-tag
 		 target
-		 parse
 		 mhash-ref
 		 mhash-set!
 		 mhash-contains?
-		 define-tag)
+		 define-tag
+		 attr-val
+		 texpr->md)
 
 ;; --------------------------------------------------
 
@@ -78,7 +79,7 @@
 	; [(eq? (car texpr) 'code) texpr]
 	[(empty? (car texpr)) texpr] ; case when ◊cite[ returns '(())
 	[(symbol? (car texpr))
-	  (define tag (fetch-tag (symbol->string (car texpr))))
+	 (define tag (fetch-tag (symbol->string (car texpr))))
 	  (define result (map texpr->md (cdr texpr)))
 	  (apply tag result)]
 	[else (cons 'txt (map texpr->md texpr))]))

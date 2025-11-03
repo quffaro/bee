@@ -1,0 +1,7 @@
+◊section{Introduction to Transclusion}
+
+Transclusion is the process of injecting the content of a file into that of another file.
+
+◊!{test/transcluded-file.bee}
+
+We should straighten out the paths however. There is also an issue when keyword arguments..

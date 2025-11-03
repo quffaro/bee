@@ -1,5 +1,6 @@
 
-(provide parse)
+(provide parse
+		 read-and-parse)
 
 (define (string->expr str)
   (read (open-input-string (string-append "(" str ")"))))
@@ -97,6 +98,13 @@
 			  (char=? (car chars) #\◊)
 			  (char=? (cadr chars) #\'))
 		 (tokenize-loop (cddr chars) (cons 'VAR acc))]
+		[(and (>= (length chars) 2)
+          (char=? (car chars) #\◊)
+          (char=? (cadr chars) #\!))
+         (call-with-values
+           (lambda () (read-braces-string (cdddr chars)))
+           (lambda (content rest)
+             (tokenize-loop rest (cons (list 'TRANSCLUDE content) acc))))]
 		[(and (>= (length chars) 2)
           (char=? (car chars) #\◊)
           (char=? (cadr chars) #\$))
@@ -215,6 +223,9 @@
 		  (lambda (content rest)
 			;;  TODO only taking out the first element of the list
 			(loop (cons (list 'var (car content)) acc) rest)))]
+	  ;; DANGER OF INFINITE LOOP!!!
+	  [(and (pair? (car tokens)) (eq? (caar tokens) 'TRANSCLUDE))
+	    (loop (cons (list 'transclude (read-and-parse (cadar tokens))) acc) (cdr tokens))] 
 	  [(and (pair? (car tokens)) (eq? (caar tokens) 'LATEX))
 		(loop (cons (list 'ltx (cadar tokens)) acc) (cdr tokens))]
 	  ; [(eq? (car tokens) 'LATEX) 
@@ -247,3 +258,9 @@
             cmd)
             (begin
 			  (error "Unexpected tokens after command")))))))
+
+(define (read-and-parse file)
+  (define port (open-input-file file))
+  (define content (read-port-to-string port))
+  (define parsed (parse content))
+  parsed)
