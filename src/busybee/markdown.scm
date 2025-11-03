@@ -16,3 +16,11 @@
 (define-tag (cite md) (attrs els)
   (define src (attr-val attrs 'src))
   `(txt ,@src ,@els))
+
+;; busybee-specific
+
+;; because of the awkwardness defining 
+(define-tag (transclude md) (attrs els)
+  (displayln (cadar els))
+  (define content (cadar els))
+  `(txt ,@content))
