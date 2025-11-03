@@ -1,14 +1,14 @@
 use crate::{
     core::{
         buffer::Buffer,
-        model::{DocumentModel, Layout, article},
+        model::{article, DocumentModel, Layout},
     },
     gui,
 };
 use catlog::zero::QualifiedName;
 use eframe::egui::Id;
 use std::collections::HashMap;
-use steel::{SteelVal, rerrs::SteelErr, steel_vm::engine::Engine};
+use steel::{rerrs::SteelErr, steel_vm::engine::Engine, SteelVal};
 
 pub struct DocumentEngine {
     pub engine: Option<Engine>,

@@ -10,6 +10,9 @@
 (define-tag (section md) (attrs els)
  `(txt "## " ,@els "\n"))
 
+(define-tag (ltx md) (attrs els)
+ `(txt "$" ,@els "$"))
+
 (define-tag (cite md) (attrs els)
   (define src (attr-val attrs 'src))
   `(txt ,@src ,@els))

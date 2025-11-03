@@ -3,9 +3,18 @@ name = "bee"
 version = "0.1.0"
 edition = "2024"
 
+[[bin]]
+name = "bee"
+path = "src/main.rs"
+
+[[bin]]
+name = "bee-cli"
+path = "src/cli/main.rs"
+
 [dependencies]
 bimap = "0.6.3"
 catlog = { git = "https://github.com/ToposInstitute/CatColab" }
+clap = { version = "4.5.51", features = ["derive"] }
 eframe = "0.32.3"
 egui = "0.32.3"
 egui_extras = "0.32.3"

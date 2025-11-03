@@ -1,4 +1,5 @@
 use crate::core::document::Document;
+use catlog::zero::name;
 use eframe::egui;
 use ropey::Rope;
 use std::{any::TypeId, ops::Range, path::PathBuf};
@@ -8,7 +9,15 @@ pub struct App {
     document: Document,
 }
 
+impl From<String> for App {
+    fn from(string: String) -> App {
+        let document: Document = string.into();
+        App { document }
+    }
+}
+
 impl App {
+    // do we do anything with this context...?
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         let mut app = Default::default();
         app
@@ -48,6 +57,15 @@ impl App {
     #[inline]
     pub fn lozenge(&mut self) {
         self.document.lozenge()
+    }
+
+    // TODO what am I doing here
+    pub fn parse(&mut self) {
+        let name = name("Buffer");
+        let object = self.document.instance.clone();
+        let buffer = object.get(&name).unwrap();
+        self.document
+            .parse(name, buffer.rope.slice(0..).as_str().expect("!"));
     }
 
     pub fn preprocess(&mut self, path: PathBuf) {
