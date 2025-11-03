@@ -21,7 +21,7 @@
 
 (define methods (mhash))
 
-(define target (make-parameter "tex"))
+(define target (make-parameter "md"))
 
 (define (register-tag! name tgt expr)
   (define fmt-table

@@ -5,6 +5,9 @@
  `(txt "_" ,@els "_"))
 
 (define-tag (def md) (attrs els)
+ `(txt "*" ,@els "*"))
+
+(define-tag (ul md) (attrs els)
  `(txt "" ,@els ""))
 
 (define (fmt-section-level attrs)
@@ -19,6 +22,25 @@
   (define lvl-str (fmt-section-level attrs))
   `(txt ,lvl-str " " ,@els "\n"))
 
+(define (split-by lst x)
+  (foldr (lambda (element next)
+           (if (eqv? element x)
+               (cons '() next)
+               (cons (cons element (first next)) (rest next))))
+         (list '()) lst))
+
+(define (intersperse lst val)
+  (cond
+	[(empty? lst) lst]
+	[else
+	  (cons (car lst) (cons val (intersperse (cdr lst) val)))]))
+
+(define-tag (pre md) (attrs els)
+  ; (define tabbed-els (string-replace (car els) "\n" "\n\t"))
+  ; (define spersed (intersperse (split-by els 'NEWLINE) (list 'NEWLINE "\t")))
+  ; (define tabbed-els (apply append spersed))
+  `(txt "```\n" ,@els "```" ))
+
 (define-tag (ltx md) (attrs els)
  `(txt "$" ,@els "$"))
 
@@ -28,6 +50,5 @@
 
 ;; busybee-specific
 
-;; because of the awkwardness defining 
 (define-tag (transclude md) (attrs els)
   `(txt ,@els)) 

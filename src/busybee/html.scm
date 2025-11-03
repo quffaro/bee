@@ -16,3 +16,8 @@
 (define-tag (cite html) (attrs els)
   (define src (attr-val attrs 'src))
   `(txt ,@src ,@els))
+
+;; busybee-specific
+
+(define-tag (transclude html) (attrs els)
+  `(txt ,@els))

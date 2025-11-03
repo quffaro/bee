@@ -43,7 +43,22 @@
 		(loop (cons (car chars) acc) (cdr chars) brace-depth)]))
   (loop '() chars 0))
 
-(read-braces-string (string->list "{\\int_{X}}"))
+(define (read-braces-string-no-braces chars)
+  (define (loop acc chars brace-depth)
+	(cond
+	  [(null? chars)
+	    (values (list->string (reverse acc)) '())]
+	  [(eq? (car chars) #\})
+	     (if (= brace-depth 1)
+		   (values (list->string (reverse acc)) (cdr chars))
+		   (loop (cons #\} acc) (cdr chars) (- brace-depth 1)))]
+	  [(eq? (car chars) #\{)
+	     (if (= brace-depth 0)
+			(loop acc (cdr chars) (+ brace-depth 1))
+			(loop (cons #\{ acc) (cdr chars) (+ brace-depth 1)))]
+	  [else
+		(loop (cons (car chars) acc) (cdr chars) brace-depth)]))
+  (loop '() chars 0))
 
 (define (read-string chars)
    (define (loop acc chars)
@@ -112,6 +127,16 @@
            (lambda () (read-braces-string (cdddr chars)))
            (lambda (content rest)
              (tokenize-loop rest (cons (list 'LATEX content) acc))))]
+		[(and (>= (length chars) 4)
+		   (char=? (car chars) #\◊)
+		   (char=? (cadr chars) #\p)
+		   (char=? (caddr chars) #\r)
+		   (char=? (cadddr chars) #\e))
+		 (call-with-values
+		   (lambda () (read-braces-string-no-braces (cddddr chars)))
+		   (lambda (content rest)
+			 (define formatted-content (string-append (trim content) "\n"))
+			 (tokenize-loop rest (cons (list 'PRE formatted-content) acc))))]
 		[(char=? (car chars) #\◊)
 		 (tokenize-loop (cdr chars) (cons 'LOZENGE acc))]
 		[(char=? (car chars) #\newline)
@@ -188,8 +213,8 @@
       [(and (not (null? tokens)) (eq? (car tokens) 'LBRACKET))
        (call-with-values
          (lambda () (parse-kwargs (cdr tokens)))
-         (lambda (kwargs tokens)
-           ; (values (list head kwargs) tokens)))]
+         (lambda (kwargs tokens) 
+		   ; (values (list head kwargs) tokens)))]
 		   (if (and (not (null? tokens)) (eq? (car tokens) 'LBRACE))
                (call-with-values
                  (lambda () (parse-loop (cdr tokens)))
@@ -228,6 +253,8 @@
 	    (loop (cons (list 'transclude (read-and-parse (cadar tokens))) acc) (cdr tokens))] 
 	  [(and (pair? (car tokens)) (eq? (caar tokens) 'LATEX))
 		(loop (cons (list 'ltx (cadar tokens)) acc) (cdr tokens))]
+	[(and (pair? (car tokens)) (eq? (caar tokens) 'PRE))
+		(loop (cons (list 'pre (cadar tokens)) acc) (cdr tokens))]
 	  ; [(eq? (car tokens) 'LATEX) 
 		; (loop (list '$ (cadr tokens) acc) (cddr tokens))]
 	  [(and (eq? (car tokens) 'LOZENGE) (not (empty? (cdr tokens))))

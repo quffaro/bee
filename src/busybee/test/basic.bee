@@ -1,0 +1,9 @@
+◊section{Hello}
+
+◊${hello!!}
+
+◊pre{
+function(::A)
+  @info \"B\"
+end
+}
