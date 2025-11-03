@@ -21,6 +21,4 @@
 
 ;; because of the awkwardness defining 
 (define-tag (transclude md) (attrs els)
-  (displayln (cadar els))
-  (define content (cadar els))
-  `(txt ,@content))
+  `(txt ,@els)) 
