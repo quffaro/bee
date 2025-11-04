@@ -23,7 +23,7 @@ impl DocumentEngine {
         engine.run(format!(r"{}", setup));
         let markdown = include_str!("../busybee/markdown.scm");
         engine.run(format!(r"{}", markdown));
-        let latex = include_str!("../busybee/another.scm");
+        let latex = include_str!("../busybee/latex.scm");
         engine.run(format!(r"{}", latex));
         Self {
             engine: Some(engine),

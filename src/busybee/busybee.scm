@@ -21,7 +21,7 @@
 
 (define methods (mhash))
 
-(define target (make-parameter "md"))
+(define target (make-parameter "tex"))
 
 (define (register-tag! name tgt expr)
   (define fmt-table
@@ -84,10 +84,6 @@
                          (string->symbol (cadr parts)))
 		 (loop (cddr rest) h))]
       [else (loop (cddr rest) h)])))
-
-; (kw-list->hash (cadar parsed))
-
-; (kw->mhash x)
 
 (define (texpr->tgt texpr)
   (cond
