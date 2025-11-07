@@ -11,7 +11,8 @@
 		 mhash-contains?
 		 define-tag
 		 attr-val
-		 texpr->md)
+		 texpr->md
+		 flatten-txt-expr)
 
 ;; --------------------------------------------------
 
@@ -58,21 +59,40 @@
 
 (define (handle-kw proc)
   (lambda args
-    (cond
-      [(null? args) (proc (hash) '())]
-      [(hash? (car args)) (proc (car args) (cdr args))]
-      [else (proc (hash) args)])))
+	(cond
+      [(null? args) (proc (mhash) '())]
+      [(mhash? (car args)) (proc (car args) (cdr args))]
+      [else (proc (mhash) args)])))
 
 (define (attr-val dict key)
-  (if (hash-contains? dict key)
-    (hash-ref dict key)
+  (if (mhash-contains? dict key)
+    (mhash-ref dict key)
 	(list void)))
 
 ;; --------------------------------------------------
 
+(define (kw-list->mhash lst)
+  (let loop ((rest lst) (h (mhash)))
+    (cond
+      [(< (length rest) 2) h]
+      [(eq? (car rest) 'KW)
+       (let* ([kv-str (cadr rest)]
+              [parts (split-whitespace kv-str)])
+         (mhash-set! h 
+                         (string->symbol (car parts))
+                         (string->symbol (cadr parts)))
+		 (loop (cddr rest) h))]
+      [else (loop (cddr rest) h)])))
+
+; (kw-list->hash (cadar parsed))
+
+; (kw->mhash x)
+
 (define (texpr->md texpr)
   (cond
 	[(empty? texpr) texpr]
+	[(and (list? texpr) (eq? (car texpr) 'KW)) 
+	 (kw-list->mhash texpr)]
 	[(string? texpr) texpr]
 	[(eq? 'NEWLINE texpr) "\n"]
 	[(symbol? texpr) texpr]
@@ -80,7 +100,7 @@
 	[(empty? (car texpr)) texpr] ; case when ◊cite[ returns '(())
 	[(symbol? (car texpr))
 	 (define tag (fetch-tag (symbol->string (car texpr))))
-	  (define result (map texpr->md (cdr texpr)))
+	 (define result (map texpr->md (cdr texpr)))
 	  (apply tag result)]
 	[else (cons 'txt (map texpr->md texpr))]))
 
