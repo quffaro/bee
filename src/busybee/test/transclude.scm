@@ -1,5 +1,18 @@
 (require "parsing.scm")
 
+(require "busybee.scm")
+
+(require "markdown.scm")
+
+(define parsed (parse "◊section[#:lvl 3]{Introduction}
+	   Lorem ipsum ◊cite[#:src 'val]{sic}"))
+
+parsed
+
+(define interpreted (texpr->md parsed))
+
+(flatten-txt-expr interpreted)
+
 (read-and-parse "test/transcluding.bee")
 
 ;; TODO a \n character is not parsed in the second line.
