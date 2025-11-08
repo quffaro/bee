@@ -11,8 +11,9 @@
 		 mhash-contains?
 		 define-tag
 		 attr-val
-		 texpr->md
-		 flatten-txt-expr)
+		 texpr->tgt
+		 flatten-txt-expr
+		 render)
 
 ;; --------------------------------------------------
 
@@ -88,7 +89,7 @@
 
 ; (kw->mhash x)
 
-(define (texpr->md texpr)
+(define (texpr->tgt texpr)
   (cond
 	[(empty? texpr) texpr]
 	[(and (list? texpr) (eq? (car texpr) 'KW)) 
@@ -100,9 +101,9 @@
 	[(empty? (car texpr)) texpr] ; case when ◊cite[ returns '(())
 	[(symbol? (car texpr))
 	 (define tag (fetch-tag (symbol->string (car texpr))))
-	 (define result (map texpr->md (cdr texpr)))
+	 (define result (map texpr->tgt (cdr texpr)))
 	  (apply tag result)]
-	[else (cons 'txt (map texpr->md texpr))]))
+	[else (cons 'txt (map texpr->tgt texpr))]))
 
 (define (flatten-txt-expr expr)
   (cond
@@ -110,3 +111,7 @@
     [(and (list? expr) (eq? (car expr) 'txt))
      (apply string-append (map flatten-txt-expr (cdr expr)))]
     [else (format "~a" expr)]))
+
+(define (render tgt txt)
+  (parameterize ([target tgt])
+	(flatten-txt-expr (texpr->tgt (parse txt)))))

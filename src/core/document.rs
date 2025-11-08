@@ -23,6 +23,8 @@ impl DocumentEngine {
         engine.run(format!(r"{}", setup));
         let markdown = include_str!("../busybee/markdown.scm");
         engine.run(format!(r"{}", markdown));
+        let latex = include_str!("../busybee/another.scm");
+        engine.run(format!(r"{}", latex));
         Self {
             engine: Some(engine),
         }
@@ -108,15 +110,16 @@ impl From<String> for Document {
 }
 
 impl Document {
+    // TODO this should be render
     pub fn parse(
         &mut self,
         name: QualifiedName,
         input: &str,
+        target: &str,
     ) -> Option<Result<Vec<SteelVal>, SteelErr>> {
-        let parsed = self.engine.run(format!(
-            r#" (flatten-txt-expr (texpr->md (parse "{}"))) "#,
-            input
-        ));
+        let parsed = self
+            .engine
+            .run(format!(r#" (render "{}" "{}"))) "#, target, input));
         self.parsed.insert(name, parsed)
     }
 
