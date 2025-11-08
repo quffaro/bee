@@ -60,12 +60,12 @@ impl App {
     }
 
     // TODO what am I doing here
-    pub fn parse(&mut self) {
+    pub fn parse(&mut self, target: &str) {
         let name = name("Buffer");
         let object = self.document.instance.clone();
         let buffer = object.get(&name).unwrap();
         self.document
-            .parse(name, buffer.rope.slice(0..).as_str().expect("!"));
+            .parse(name, buffer.rope.slice(0..).as_str().expect("!"), target);
     }
 
     pub fn preprocess(&mut self, path: PathBuf) {

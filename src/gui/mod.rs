@@ -59,7 +59,7 @@ impl Document {
                 });
 
                 if let Some(buffer) = must_parse {
-                    self.parse(name, buffer.rope.slice(0..).as_str().expect("!"));
+                    self.parse(name, buffer.rope.slice(0..).as_str().expect("!"), "md");
                 }
             }
             Layout::Split { left, right } => {

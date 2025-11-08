@@ -9,8 +9,7 @@ enum OutputFormat {
     Markdown,
     Forester,
     // HTML
-    // Latex
-    // Pdf
+    Latex, // Pdf
 }
 
 impl Display for OutputFormat {
@@ -18,15 +17,17 @@ impl Display for OutputFormat {
         match self {
             OutputFormat::Markdown => write!(f, "markdown"),
             OutputFormat::Forester => write!(f, "forester"),
+            OutputFormat::Latex => write!(f, "latex"),
         }
     }
 }
 
 impl OutputFormat {
-    fn extension(&self) -> String {
+    fn extension(&self) -> &str {
         match self {
-            OutputFormat::Markdown => String::from("md"),
-            OutputFormat::Forester => String::from("tree"),
+            OutputFormat::Markdown => "md",
+            OutputFormat::Forester => "tree",
+            OutputFormat::Latex => "ltx",
         }
     }
 }
@@ -71,7 +72,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             input,
             output,
             format,
-        } => convert(input, output),
+        } => convert(input, output, format),
     }
 
     Ok(())

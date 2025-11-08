@@ -4,14 +4,12 @@
 
 (require "markdown.scm")
 
-(define parsed (parse "◊section[#:lvl 3]{Introduction}
-	   Lorem ipsum ◊cite[#:src 'val]{sic}"))
+(render "md" "◊section[#:lvl 3]{Introduction}
+	   Lorem ipsum ◊cite[#:src 'val]{sic}")
 
-parsed
+; (render "ltx" "◊section[#:lvl 3]{Introduction}
+; 	   Lorem ipsum ◊cite[#:src 'val]{sic}")
 
-(define interpreted (texpr->md parsed))
-
-(flatten-txt-expr interpreted)
 
 (read-and-parse "test/transcluding.bee")
 
