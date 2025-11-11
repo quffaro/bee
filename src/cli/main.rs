@@ -27,7 +27,9 @@ impl OutputFormat {
         match self {
             OutputFormat::Markdown => "md",
             OutputFormat::Forester => "tree",
-            OutputFormat::Latex => "ltx",
+            OutputFormat::Latex => "tex",
+            // TODO if the format were wrong, e.g., "ltx" rather than "tex", we would
+            // just get "function expect 1 srguments, found 2" type errors.
         }
     }
 }

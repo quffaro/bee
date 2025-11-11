@@ -13,11 +13,17 @@
 (define-tag (ltx tex) (attrs els)
  `(txt "$" ,@els "$"))
 
+(define-tag (pre tex) (attrs els)
+ `(txt "\\begin{verbatim}\n" ,@els "\n\\end{verbatim}"))
+
 (define-tag (cite tex) (attrs els)
   (define src (attr-val attrs 'src))
   `(txt ,@src ,@els))
 
 ;; busybee-specific
 
-(define-tag (transclude tex) (attrs els)
+(define-tag (! tex) (attrs els)
+  `(txt ,@els))
+
+(define-tag (root tex) (attrs els)
   `(txt ,@els))

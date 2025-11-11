@@ -7,7 +7,7 @@ use crate::{
 };
 use catlog::zero::QualifiedName;
 use eframe::egui::Id;
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 use steel::{rerrs::SteelErr, steel_vm::engine::Engine, SteelVal};
 
 pub struct DocumentEngine {
@@ -17,8 +17,6 @@ pub struct DocumentEngine {
 impl DocumentEngine {
     fn startup() -> Self {
         let mut engine = Engine::new();
-        let parsing = include_str!("../busybee/parsing.scm");
-        engine.run(format!(r"{}", parsing));
         let setup = include_str!("../busybee/busybee.scm");
         engine.run(format!(r"{}", setup));
         let markdown = include_str!("../busybee/markdown.scm");
@@ -66,6 +64,16 @@ pub struct Document {
 
     /// Document focus
     pub focus: Option<egui::Id>,
+}
+
+impl fmt::Debug for Document {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
+        f.debug_struct("Document")
+            .field("instance", &self.instance)
+            .field("mapping", &self.mapping)
+            .field("parsed", &self.parsed)
+            .finish()
+    }
 }
 
 impl Default for Document {
@@ -122,7 +130,6 @@ impl Document {
         let parsed = self
             .engine
             .run(format!(r#" (render "{}" "{}") "#, target, input));
-        dbg!(&parsed);
         self.parsed.insert(name, parsed)
     }
 
@@ -145,7 +152,7 @@ impl Document {
         }
     }
 
-    /// This converts the parsed code into the target format.
+    /// Moves the rendered strings into a single string output
     pub fn preprocess(&mut self) -> Result<String, SteelErr> {
         let mut out: String = Default::default();
         for value in self.parsed.values() {
