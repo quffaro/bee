@@ -1,8 +1,9 @@
 use crate::core::document::Document;
 use catlog::zero::name;
 use eframe::egui;
+use regex::Regex;
 use ropey::Rope;
-use std::{any::TypeId, ops::Range, path::PathBuf};
+use std::{any::TypeId, fs::read_to_string, ops::Range, path::PathBuf};
 
 #[derive(Default)]
 pub struct App {
@@ -71,6 +72,18 @@ impl App {
     pub fn preprocess(&mut self, path: PathBuf) {
         if let Ok(buffer) = self.document.preprocess() {
             std::fs::write(path, buffer);
+        }
+    }
+
+    pub fn template(&mut self, output: PathBuf, target: &str, template: PathBuf) {
+        self.parse(target);
+        if let Ok(buffer) = self.document.preprocess() {
+            if let Ok(body) = read_to_string(&template) {
+                if let Ok(re) = Regex::new(r"◊\(body\)") {
+                    let out: String = re.replace(&body, buffer).to_string();
+                    std::fs::write(output, out).expect("!");
+                }
+            }
         }
     }
 

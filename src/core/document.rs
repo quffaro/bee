@@ -119,7 +119,7 @@ impl Document {
     ) -> Option<Result<Vec<SteelVal>, SteelErr>> {
         let parsed = self
             .engine
-            .run(format!(r#" (render "{}" "{}"))) "#, target, input));
+            .run(format!(r#" (render "{}" "{}") "#, target, input));
         self.parsed.insert(name, parsed)
     }
 
