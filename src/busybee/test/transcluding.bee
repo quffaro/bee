@@ -4,4 +4,9 @@ Transclusion is the process of injecting the content of a file into that of anot
 
 ◊!{test/transcluded-file.bee}
 
-We should straighten out the paths however. There is also an issue when keyword arguments..
+We should straighten out the paths however. There is also an issue when keyword arguments...
+
+◊pre{
+function(::Transclusion)
+
+end}

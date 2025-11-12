@@ -25,6 +25,8 @@ impl DocumentEngine {
         engine.run(format!(r"{}", markdown));
         let latex = include_str!("../busybee/latex.scm");
         engine.run(format!(r"{}", latex));
+        let html = include_str!("../busybee/html.scm");
+        engine.run(format!(r"{}", html));
         Self {
             engine: Some(engine),
         }
@@ -119,7 +121,8 @@ impl Document {
     ) -> Option<Result<Vec<SteelVal>, SteelErr>> {
         let parsed = self
             .engine
-            .run(format!(r#" (render "{}" "{}"))) "#, target, input));
+            .run(format!(r#" (render "{}" "{}") "#, target, input));
+        dbg!(&parsed);
         self.parsed.insert(name, parsed)
     }
 
