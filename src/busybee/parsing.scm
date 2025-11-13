@@ -1,9 +1,16 @@
+;; TODO
+;; - move tokenizer to its own file
+;; - document and clean up parser code
+;; - I was originally going to minimize the tokenizer and let the parser handle different cases, but we don't want to tokenize content we don't intend to parse. However, we need kwargs for transclusion
 
 (provide parse
 		 read-and-parse)
 
 (define (string->expr str)
   (read (open-input-string (string-append "(" str ")"))))
+
+(require "/home/you/projects/personal/steel-dev/steel/cogs/collections/mhash.scm")
+
 
 ;; PARSING
 
@@ -76,6 +83,7 @@
            [else (loop (cons (car chars) acc) (cdr chars))]))
    (loop '() chars))
 
+;; unused
 (define (read-kw chars)
 	(define (loop acc chars)
 	  (cond [(null? chars) (values (list->string (reverse acc)) '())]
@@ -113,13 +121,14 @@
 			  (char=? (car chars) #\◊)
 			  (char=? (cadr chars) #\'))
 		 (tokenize-loop (cddr chars) (cons 'VAR acc))]
-		[(and (>= (length chars) 2)
-          (char=? (car chars) #\◊)
-          (char=? (cadr chars) #\!))
-         (call-with-values
-           (lambda () (read-braces-string (cdddr chars)))
-           (lambda (content rest)
-             (tokenize-loop rest (cons (list 'TRANSCLUDE content) acc))))]
+		; [(and (>= (length chars) 2)
+          ; (char=? (car chars) #\◊)
+          ; (char=? (cadr chars) #\!))
+		;  (call-with-values
+		;    ;; TODO amend so that we can retain kwargs
+           ; (lambda () (read-braces-string (cdddr chars)))
+           ; (lambda (content rest)
+             ; (tokenize-loop rest (cons (list 'TRANSCLUDE content) acc))))]
 		[(and (>= (length chars) 2)
           (char=? (car chars) #\◊)
           (char=? (cadr chars) #\$))
@@ -156,15 +165,30 @@
 		   (lambda (str rest)
             (tokenize-loop rest (cons str acc))))])))
 
-; (tokenize-loop (string->list "becomes the following") '())
 
-; (parse "becomes the following... ◊b{hello} ◊${\\int_{X}d\\omega}")
+; (tokenize-loop (string->list "◊b[#:key1 'value]{hello}") '())
+
+; '(LOZENGE "b" LBRACKET KW "key1 'value" RBRACKET LBRACE "hello" RBRACE)
 
 ; (parse "◊b{Fraisse limits} are model-theoretic constructions for producing a suitable nice yet countably infinite structure out of substructures.")
 
-(define (parse val)
+(define (kw-list->mhash lst)
+  (let loop ((rest lst) (h (mhash)))
+    (cond
+      [(< (length rest) 2) h]
+      [(eq? (car rest) 'KW)
+       (let* ([kv-str (cadr rest)]
+              [parts (split-whitespace kv-str)])
+         (mhash-set! h 
+                         (string->symbol (car parts))
+                         (string->symbol (cadr parts)))
+		 (loop (cddr rest) h))]
+      [else (loop (cddr rest) h)])))
+
+(define (parse val #:transcluding? [is-transcluding #f])
   (define tokens (tokenize-loop (string->list val) '()))
-	;;
+
+  ;;
   (define (parse-kwargs tokens)
   (define (loop acc tokens)
     (cond
@@ -172,7 +196,8 @@
       [(eq? (car tokens) 'RBRACKET) (values (reverse acc) (cdr tokens))]
       [else (loop (cons (car tokens) acc) (cdr tokens))]))
   (loop '() tokens))
-    ;;
+    
+  ;;
   (define (parse-parens tokens)
     (define (loop acc tokens paren-depth)
       (cond
@@ -187,7 +212,8 @@
         [else
           (loop (cons (if (string? (car tokens)) (car tokens) (symbol->string (car tokens))) acc) (cdr tokens) paren-depth)]))
     (loop '() tokens 0))
-    ;;
+    
+  ;;
   (define (parse-braces tokens)
     (define (loop acc tokens paren-depth)
       (cond
@@ -202,8 +228,9 @@
         [else
           (loop (cons (if (string? (car tokens)) (car tokens) (symbol->string (car tokens))) acc) (cdr tokens) paren-depth)]))
     (loop '() tokens 0))
-    ;;
-  (define (parse-cmd tokens)
+  
+  ;; 
+  (define (parse-cmd tokens #:arg-as-string [arg-as-string #false])
     (define head (string->symbol (car tokens)))
     (define tokens (cdr tokens))
     (cond
@@ -213,24 +240,42 @@
       [(and (not (null? tokens)) (eq? (car tokens) 'LBRACKET))
        (call-with-values
          (lambda () (parse-kwargs (cdr tokens)))
-         (lambda (kwargs tokens) 
-		   ; (values (list head kwargs) tokens)))]
+         (lambda (kwargs tokens)
+		   (define kwargs (kw-list->mhash kwargs))
 		   (if (and (not (null? tokens)) (eq? (car tokens) 'LBRACE))
                (call-with-values
                  (lambda () (parse-loop (cdr tokens)))
                  (lambda (content tokens)
-                   (values (list head kwargs content) tokens)))
+                   (cond
+					 [(eq? head '!)
+					    (define transcluded (read-and-parse (car content) #:transcluding? #t))
+					    (values `(,head ,kwargs ,@(cddr transcluded)) tokens)]
+					 [else
+				   (values `(,head ,kwargs ,@content) tokens)])))
                (values (list head kwargs '()) '()))))]
       ;; case 2: command { content }
       [(and (not (null? tokens)) (eq? (car tokens) 'LBRACE))
        (call-with-values
          (lambda () (parse-loop (cdr tokens)))
          (lambda (content tokens)
-           (values (cons head content) tokens)))]
+		 (cond
+		   [(eq? head '!)
+			(define transcluded (read-and-parse (car content) #:transcluding #t))
+			(values `(,head ,(mhash) ,@(cddr transcluded)) tokens)]
+		   [else
+		   ; (cond
+			 ; [(eq? head '!)
+			  ; (define transcluded (read-and-parse (car content)))
+			  ; (values (list 'transclude (mhash) transcluded) tokens)]
+			 ; [else
+			  (values `(,head ,(mhash) ,@content) tokens)])))]
+			
 	  [else
 		 (values '() tokens)]
       ; [else (error "Expected [ or { after command")]
 	  ))
+
+  ;;
   (define (parse-loop tokens)
     (define (loop acc tokens)
       (cond
@@ -249,12 +294,13 @@
 			;;  TODO only taking out the first element of the list
 			(loop (cons (list 'var (car content)) acc) rest)))]
 	  ;; DANGER OF INFINITE LOOP!!!
-	  [(and (pair? (car tokens)) (eq? (caar tokens) 'TRANSCLUDE))
-	    (loop (cons (list 'transclude (read-and-parse (cadar tokens))) acc) (cdr tokens))] 
+	  ; [(and (pair? (car tokens)) (eq? (caar tokens) 'TRANSCLUDE))
+	  ;    (displayln (car tokens))
+	  ;   (loop (cons (list 'transclude (read-and-parse (cadar tokens))) acc) (cdr tokens))] 
 	  [(and (pair? (car tokens)) (eq? (caar tokens) 'LATEX))
-		(loop (cons (list 'ltx (cadar tokens)) acc) (cdr tokens))]
+		(loop (cons (list 'ltx (mhash) (cadar tokens)) acc) (cdr tokens))]
 	[(and (pair? (car tokens)) (eq? (caar tokens) 'PRE))
-		(loop (cons (list 'pre (cadar tokens)) acc) (cdr tokens))]
+		(loop (cons (list 'pre (mhash) (cadar tokens)) acc) (cdr tokens))]
 	  ; [(eq? (car tokens) 'LATEX) 
 		; (loop (list '$ (cadr tokens) acc) (cddr tokens))]
 	  [(and (eq? (car tokens) 'LOZENGE) (not (empty? (cdr tokens))))
@@ -263,7 +309,12 @@
   	       (call-with-values
   	         (lambda () (parse-parens (cddr tokens)))
   	         (lambda (content rest)
-  	           (loop (cons (list 'code content) acc) rest)))] 
+  	           (loop (cons (list 'code content) acc) rest)))]
+		  ; [(eq? (cadr tokens) '!)
+		  ;   (call-with-values
+			  ; (lambda () (parse-cmd-string) (cdr tokens))
+			  ; (lambda () (cmd rest)
+				; (loop (cons cmd acc) rest)))]
 		  [else
   	        (call-with-values
   		      (lambda () (parse-cmd (cdr tokens)))
@@ -280,14 +331,12 @@
         (lambda () (parse-loop tokens))
         (lambda (cmd remaining)
           (if (null? remaining)
-			(begin
-			  ; (displayln cmd)
-            cmd)
+			(if is-transcluding `(root ,@cmd) `(root ,(mhash) ,@cmd))
             (begin
 			  (error "Unexpected tokens after command")))))))
 
-(define (read-and-parse file)
+(define (read-and-parse file #:transcluding? [is-transcluding #f])
   (define port (open-input-file file))
   (define content (read-port-to-string port))
-  (define parsed (parse content))
+  (define parsed (parse content #:transcluding is-transcluding))
   parsed)
