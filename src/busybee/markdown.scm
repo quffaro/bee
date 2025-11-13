@@ -13,8 +13,9 @@
 (define (fmt-section-level attrs)
   (define level (attr-val attrs 'lvl))
   (define level (cond
-				  [(void? level) 1]
+				  [(or (void? level) (empty? level)) 1]
 				  [(list? level) 1] ;; TODO when (#<void>)
+				  [(number? level) level]
 				  [else (string->int (symbol->string level))]))
   (string-join (map (lambda _ "#") (range level))))
 
@@ -48,7 +49,18 @@
   (define src (attr-val attrs 'src))
   `(txt ,@els))
 
+(require "/home/you/projects/personal/steel-dev/steel/cogs/collections/mhash.scm")
+(require "srfi/srfi-28/format.scm")
+
+
+(define-tag (example md) (attrs els)
+  (define name (format "~a" (mhash-ref attrs 'name)))
+  `(txt ,name ": " ,@els "\n\n"))
+
 ;; busybee-specific
 
-(define-tag (transclude md) (attrs els)
-  `(txt ,@els)) 
+(define-tag (! md) (attrs els) 
+   `(txt ,@els))
+
+(define-tag (root md) (attrs els)
+  `(txt ,@els))

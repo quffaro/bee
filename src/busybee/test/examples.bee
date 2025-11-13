@@ -1,0 +1,7 @@
+◊section[#:lvl 1]{Examples}
+
+This text ◊b{should} be filtered out. The "1" should be a number.
+
+◊example[#:of 'category #:name Finset]{Category of finite sets and finite functions}
+
+◊example[#:of 'category #:name Top]{Category of topological spaces}

@@ -11,8 +11,13 @@
 		 mhash-contains?
 		 define-tag
 		 attr-val
+		 texpr?
+		 head
+		 attrs
+		 args
 		 texpr->tgt
 		 flatten-txt-expr
+		 query-loop
 		 render)
 
 ;; --------------------------------------------------
@@ -49,14 +54,14 @@
 
 (define-syntax define-tag
   (syntax-rules ()
-	[(_ (name tgt) (attrs els) body ...)
+	[(_ (name tgt) (attrs . els) body ...)
 	 (begin
 	   (register-tag! 
 		 (symbol->string (quote name)) 
 		 (symbol->string (quote tgt)) 
-		 (handle-kw (lambda (attrs els) body ...)))
+		 (handle-kw (lambda (attrs . els) body ...)))
 	   (define name
-	     (handle-kw (lambda (attrs els) body ...))))]))
+	     (handle-kw (lambda (attrs . els) body ...))))]))
 
 (define (handle-kw proc)
   (lambda args
@@ -68,7 +73,7 @@
 (define (attr-val dict key)
   (if (mhash-contains? dict key)
     (mhash-ref dict key)
-	(list void)))
+	'()))
 
 ;; --------------------------------------------------
 
@@ -85,11 +90,37 @@
 		 (loop (cddr rest) h))]
       [else (loop (cddr rest) h)])))
 
+(define (texpr? lst)
+  (match lst
+    [(list sym hsh) (and (symbol? sym) (mhash? hsh))]
+    [(list sym hsh x ...) (and (symbol? sym) 
+                           (mhash? hsh)
+                           (or (string? x) (symbol? x) (list? x)))]
+    [_ #f]))
+
+(define (head texpr)
+  (if (texpr? texpr)
+	(car texpr)
+	'()))
+
+(define (attrs texpr)
+  (if (texpr? texpr)
+	(cadr texpr)
+	(mhash)))
+
+(define (args texpr)
+  (if (texpr? texpr)
+	(match texpr
+	[(list sym hsh x ...) x]
+	[_ '()])))
+	; (if (eq? (cddr texpr) '()) '() (caddr texpr))
+	; '()))
+
 (define (texpr->tgt texpr)
   (cond
+	[(void? texpr) '()]
 	[(empty? texpr) texpr]
-	[(and (list? texpr) (eq? (car texpr) 'KW)) 
-	 (kw-list->mhash texpr)]
+	[(mhash? texpr) texpr]
 	[(string? texpr) texpr]
 	[(eq? 'NEWLINE texpr) "\n"]
 	[(symbol? texpr) texpr]
@@ -97,16 +128,79 @@
 	[(empty? (car texpr)) texpr] ; case when ◊cite[ returns '(())
 	[(symbol? (car texpr))
 	 (define tag (fetch-tag (symbol->string (car texpr))))
-	 (define result (map texpr->tgt (cdr texpr)))
+	 (define result (cond
+	   [(eq? '! (head texpr))
+		; (displayln "!!" texpr)
+		(define queried-result 
+		  (map (lambda (x) (query-loop (attrs texpr) x)) (args texpr)))
+		(map texpr->tgt queried-result)]
+	   [else
+		 (map texpr->tgt (cdr texpr))]))
 	  (apply tag result)]
 	[else (cons 'txt (map texpr->tgt texpr))]))
 
 (define (flatten-txt-expr expr)
   (cond
-    [(string? expr) expr]
-    [(and (list? expr) (eq? (car expr) 'txt))
-     (apply string-append (map flatten-txt-expr (cdr expr)))]
+    [(string? expr) (format "~a" expr)]
+	[(list? expr)
+	 (define filtered (filter 
+						(lambda (x) (not (empty? x))) expr))
+	 (if (eq? (car filtered) 'txt)
+       (apply string-append 
+			  (map flatten-txt-expr (cdr filtered))))]
     [else (format "~a" expr)]))
+
+(define (fapply-texpr-kw f kw-key texpr #:default default)
+  (define adjusted-key (string->symbol (list->string (rest (string->list kw-key)))))
+  (let [(kw-val (mhash-ref (attrs texpr) adjusted-key))]
+	(define kw (attrs texpr))
+	(if (empty? (mhash-keys->list kw))
+	  `(,(head texpr) ,(mhash kw-key default) ,(args texpr))
+	  (begin
+		(define adjusted-kw-val (char->number (cadr (string->list (value->string kw-val)))))
+		(mhash-set! kw adjusted-key (f adjusted-kw-val))
+	`(,(head texpr) ,kw ,(args texpr))))))
+
+(define (query-loop q texpr)
+  (cond
+	;; because `match` cannot match on symbols
+	[(or (string? texpr) (symbol? texpr) (empty? texpr)) ]
+	[(texpr? texpr)
+	   (define cmd-value (attr-val q 'cmd))
+	   (define kw-value (attr-val q 'kw))
+	   (define do-value (attr-val q 'do))
+	   (cond
+		 [(eq? cmd-value (head texpr)) texpr]
+		 ;; section:lvl 
+		 [(not (empty? kw-value))
+		  (define cmd-kwarg (split-once (format "~a" kw-value) ":"))
+		  (if (equal? (value->string (head texpr)) (first cmd-kwarg))
+			(fapply-texpr-kw (lambda (x) (+ x 1)) (second cmd-kwarg) texpr #:default 1))]
+		 [else
+		   (map (lambda (x) (query-loop q x)) (args texpr))])]
+	[else ]))
+
+(define (all? pred lst)
+  (foldl (lambda (fst snd) 
+		   (and fst snd)) #true (map pred lst)))
+
+; (define (query-loop q texpr)
+;   (displayln texpr)
+;   (cond
+; 	[(or (string? texpr) (symbol? texpr) (empty? texpr)) '()]
+; 	[(texpr? texpr)
+; 	  (define qkeys (mhash-keys->list q))
+; 	  (define mh (attrs texpr))
+; 	  (define keys (mhash-keys->list mh))
+; 	  (define cmd-match (eq? (mhash-ref q 'cmd) (head texpr)))
+; 	  (define search-keys (filter (lambda (k) (not (eq? k 'cmd))) qkeys))
+; 	  (define is-match 
+; 		(cons #t (map (lambda (qkey) (eq? (mhash-ref q qkey) (hash-ref mh qkey))) search-keys)))
+; 		(if (all? identity `(cmd-match ,@is-match)) 
+; 		  texpr
+;           (map (lambda (x) (query-loop q x)) (args texpr)))]
+; 	   [else
+; 		  (map (lambda (x) (query-loop q x)) texpr)]))
 
 (define (render tgt txt)
   (parameterize ([target tgt])

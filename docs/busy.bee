@@ -1,0 +1,17 @@
+◊section{Introduction}
+
+Busybee is an authoring application experimenting with several different ideas: flexible ontologies for documents, preprocessing, etc.
+
+◊section[#:lvl 2]{Capabilities}
+
+◊section[#:lvl 2]{To-Dos}
+
+◊ul{
+
+	◊li{Programmable behavior of transclusions: we'd like to be able to modify the tag functions of transcluded data. For example, we could increment the 'lvl values of the section tag}
+
+	◊li{a plug-in for helix}
+
+	◊li{live document preview}
+
+}
