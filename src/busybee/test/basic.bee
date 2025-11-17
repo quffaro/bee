@@ -1,4 +1,4 @@
-◊section{Hello}
+◊section[#:lvl 2]{Basic features}
 
 ◊${hello!!}
 
