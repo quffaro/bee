@@ -10,9 +10,16 @@
 
 (define parsed (read-and-parse "test/basic.bee"))
 
+(define parsed (read-and-parse "test/template.bee"))
+
 (require "busybee.scm")
 
 (require "markdown.scm")
+
+(require "latex.scm")
+
+(parameterize ([target "tex"])
+  (flatten-txt-expr (texpr->tgt parsed)))
 
 (texpr->tgt parsed)
 

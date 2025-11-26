@@ -18,7 +18,7 @@
 
 ;; --------------------------------------------------
 
-(require "parsing.scm")
+(require "/home/you/projects/personal/bee-dev/templating/src/busybee/parsing.scm")
 
 (provide read-and-parse)
 
@@ -142,6 +142,7 @@
 		 (map texpr->tgt queried-result)]
 	   [else
 	     (map texpr->tgt (cdr texpr))]))
+	 (displayln (car texpr) tag result)
 	  (apply tag result)]
 	;; TODO this should be a list case
 	[else (cons 'txt (map texpr->tgt texpr))]))

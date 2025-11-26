@@ -331,6 +331,7 @@
         (lambda () (parse-loop tokens))
         (lambda (cmd remaining)
           (if (null? remaining)
+			;; TODO parsing just a string should not return an error
 			(if is-transcluding `(root ,@cmd) `(root ,(mhash) ,@cmd))
             (begin
 			  (error "Unexpected tokens after command")))))))
