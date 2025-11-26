@@ -1,4 +1,6 @@
-◊section{Hello}
+◊section[#:lvl 2]{Basic features}
+
+◊def[#:term Transclusion]{What is this}
 
 ◊${hello!!}
 

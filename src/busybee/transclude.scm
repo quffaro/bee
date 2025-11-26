@@ -6,7 +6,7 @@
   (transduce parsed 
 	(flat-mapping (lambda (elem)
 	   (cond
-		 [(and (list? elem) (eq? (car elem) '!))
+		 [(and (list? elem) (eq? (car elem) 'transclude))
 		  (transclude (cadr elem))]
 		 [else (list elem)])))
 	(into-list)))
