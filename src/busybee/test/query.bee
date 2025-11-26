@@ -4,6 +4,6 @@ The atomic notes philosophy prescribes breaking notes into units of knowledge. T
 
 In this example, we will transclude a specific example from another document. We will ◊em{restrict} to only the examples in that file.
 
-This directory is relative to the file the file is being called in. It needs to be called from a project root.
+This directory is relative to the file the file is being called in. It needs to be called from a project root. The do parameter can be written in code.
 
-◊![#:cmd example #:kw 'section:'lvl #:do 'inc]{test/examples.bee}
+◊![#:tag example #:kw section:lvl #:do inc]{test/examples.bee}

@@ -1,5 +1,3 @@
-(require "parsing.scm")
-
 (require "busybee.scm")
 
 (require "markdown.scm")
@@ -8,13 +6,12 @@
 
 ;; interestingly, executing this line and then the next causes an error,
 ;; but not executing only the next line
+
 (texpr->tgt parsed)
 
 (define out (flatten-txt-expr (texpr->tgt parsed)))
 
 (read-and-parse "../../docs/busy.bee")
-
-
 
 (render "md" "◊section[#:lvl 3]{Introduction}
 	   Lorem ipsum ◊cite[#:src 'val]{sic}")

@@ -1,7 +1,3 @@
-(require "srfi/srfi-28/format.scm")
-
-(require "srfi/match.scm")
-
 (provide methods
 		 register-tag!
 		 fetch-tag
@@ -22,6 +18,12 @@
 
 ;; --------------------------------------------------
 
+(require "parsing.scm")
+
+(provide read-and-parse)
+
+(require "srfi/srfi-28/format.scm")
+(require "srfi/match.scm")
 (require "/home/you/projects/personal/steel-dev/steel/cogs/collections/mhash.scm")
 
 (define methods (mhash))
@@ -122,6 +124,7 @@
 	[_ '()])))
 
 (define (texpr->tgt texpr)
+  ;; use texpr? function
   (cond
 	[(void? texpr) '()]
 	[(empty? texpr) texpr]
@@ -135,10 +138,10 @@
 	 (define tag (fetch-tag (symbol->string (car texpr))))
 	 (define result (cond
 	   [(eq? '! (head texpr))
-		(define queried-result (map (lambda (x) (query-loop (attrs texpr) x)) (args texpr)))
-		(map texpr->tgt queried-result)]
+		 (define queried-result (map (lambda (x) (query-loop (attrs texpr) x)) (args texpr)))
+		 (map texpr->tgt queried-result)]
 	   [else
-		 (map texpr->tgt (cdr texpr))]))
+	     (map texpr->tgt (cdr texpr))]))
 	  (apply tag result)]
 	;; TODO this should be a list case
 	[else (cons 'txt (map texpr->tgt texpr))]))
@@ -153,8 +156,8 @@
     [else (format "~a" expr)]))
 
 (define (fapply-texpr-kw f kw-key texpr #:default default)
-  (define adjusted-key (string->symbol (list->string (rest (string->list kw-key)))))
-  (let [(kw-val (mhash-ref (attrs texpr) adjusted-key))]
+  (define adjusted-key (string->symbol kw-key))
+  (let [(kw-val (attr-val (attrs texpr) adjusted-key))]
 	(define kw (attrs texpr))
 	(if (empty? (mhash-keys->list kw))
 	  `(,(head texpr) ,(mhash kw-key default) ,(args texpr))
@@ -169,11 +172,11 @@
 	;; because our use of `match` cannot match on symbols
 	[(or (string? texpr) (symbol? texpr) (empty? texpr)) ]
 	[(texpr? texpr)
-	   ;; Currently the *single* value which matches all tags whose heads match `cmd`.
-	   (define cmd-value (attr-val q 'cmd))
-	   ;; The `kw-value` is a pair with the `head` of a `tag` and a kwarg that might be associated with
-	   ;; it, written `cmd:kwarg`. If there is a `tag` whose head matches `cmd` and has a keyword argument
-	   ;; matching `kwarg`, then its considered match. For example, the tag
+	   ;; Currently the *single* value which matches all tags whose heads match `tag`.
+	   (define tag-value (attr-val q 'tag))
+	   ;; The `kw-value` is a pair with the `head` of a tag and a kwarg that might be associated with
+	   ;; it, written `tag:kwarg`. If there is a `tag` whose head matches `tag` and has a keyword argument
+	   ;; matching `kwarg`, then its considered a match. For example, the texpr
 	   ;;   
 	   ;;   ◊section[#:lvl 1]{Beginning}
 	   ;;
@@ -183,12 +186,21 @@
 	   ;; Currently this is unused.
 	   (define do-value (attr-val q 'do))
 	   (cond
-		 [(eq? cmd-value (head texpr)) texpr]
+		 [(eq? tag-value (head texpr)) texpr]
 		 ;; section:lvl 
 		 [(not (empty? kw-value))
-		  (define cmd-kwarg (split-once (format "~a" kw-value) ":"))
-		  (if (equal? (value->string (head texpr)) (first cmd-kwarg))
-			(fapply-texpr-kw (lambda (x) (+ x 1)) (second cmd-kwarg) texpr #:default 1))]
+		  ;; possible forms:
+		  ;;   - section:lvl
+		  ;;   - section:lvl=1
+		  (define tag-kwarg (split-once (format "~a" kw-value) ":"))
+		  ;; possible forms:
+		  ;;   - #t
+		  ;;   - '("lvl" "1")
+		  (define quantity (split-once (second tag-kwarg) "="))
+		  (if (and (equal? (value->string (head texpr)) (first tag-kwarg))
+				;; need to parse symbols and numbers in kwargs!
+				(if quantity quantity (equal? (attr-val texpr (string->symbol (first quantity))) (string->number (second quantity)))))
+			(fapply-texpr-kw (lambda (x) (+ x 1)) (second tag-kwarg) texpr #:default 1))]
 		 [else
 		   (map (lambda (x) (query-loop q x)) (args texpr))])]
 	[else ]))
