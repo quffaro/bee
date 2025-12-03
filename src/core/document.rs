@@ -130,6 +130,7 @@ impl Document {
         let parsed = self
             .engine
             .run(format!(r#" (render "{}" "{}") "#, target, input));
+        dbg!(&parsed);
         self.parsed.insert(name, parsed)
     }
 

@@ -5,6 +5,9 @@
  `(txt "_" ,@els "_"))
 
 (define-tag (def md) (attrs els)
+  (define new-term (attr-val attrs 'term))
+  (define terms (cons (format "~a" new-term) (attr-val attrs 'terms)))
+  (mhash-set! (root-parameter) 'terms terms)
  `(txt "*" ,@els "*"))
 
 (define-tag (ul md) (attrs els)
