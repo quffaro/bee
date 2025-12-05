@@ -14,11 +14,12 @@
 		 texpr->tgt
 		 flatten-txt-expr
 		 query-loop
-		 render)
+		 render
+		 root-parameter)
 
 ;; --------------------------------------------------
 
-(require "/home/you/projects/personal/bee-dev/templating/src/busybee/parsing.scm")
+(require "/home/you/projects/personal/bee-dev/bee/src/busybee/parsing.scm")
 
 (provide read-and-parse)
 
@@ -123,6 +124,20 @@
 	[(list sym hsh x ...) x]
 	[_ '()])))
 
+(define (root-texpr? texpr)
+  (if (texpr? texpr)
+	(eq? (head texpr) 'root)) #f)
+
+(define root-parameter (make-parameter (mhash)))
+
+; (define (root-texpr->tgt texpr)
+;   (cond
+; 	[(root-texpr? texpr)
+;       (parameterize ([root-parameter (attrs texpr)])
+;         (texpr->tgt texpr)))]
+;         [else
+;     	  (error 'texpr-error "WRONG!")])
+
 (define (texpr->tgt texpr)
   ;; use texpr? function
   (cond
@@ -142,7 +157,8 @@
 		 (map texpr->tgt queried-result)]
 	   [else
 	     (map texpr->tgt (cdr texpr))]))
-	 (displayln (car texpr) tag result)
+	 (when (eq? (car texpr) 'root)
+       (root-parameter (attrs texpr)))
 	  (apply tag result)]
 	;; TODO this should be a list case
 	[else (cons 'txt (map texpr->tgt texpr))]))

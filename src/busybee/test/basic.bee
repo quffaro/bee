@@ -1,6 +1,8 @@
 ◊section[#:lvl 2]{Basic features}
 
-◊def[#:term Transclusion]{What is this}
+◊b{enjoy!}
+
+◊def[#:term Transclusion]{This is the definition body}
 
 ◊${hello!!}
 
@@ -9,3 +11,4 @@ function(::A)
   @info \"B\"
 end
 }
+

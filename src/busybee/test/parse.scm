@@ -6,15 +6,15 @@
 
 (parse "◊!{test/basic.bee}")
 
-(define parsed (read-and-parse "test/query.bee"))
-
-(define parsed (read-and-parse "test/basic.bee"))
-
-(define parsed (read-and-parse "test/template.bee"))
-
 (require "busybee.scm")
 
 (require "markdown.scm")
+
+(define parsed (read-and-parse "test/basic.bee"))
+
+(define parsed (read-and-parse "test/query.bee"))
+
+(define parsed (read-and-parse "test/template.bee"))
 
 (require "latex.scm")
 
