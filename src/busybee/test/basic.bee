@@ -1,6 +1,6 @@
 ◊section[#:lvl 2]{Basic features}
 
-◊b{enjoy!}
+We can ◊b{enbolden} or ◊em{italicize} words. However, there are trailing newlines coming from this sentence.
 
 ◊def[#:term Transclusion]{This is the definition body}
 

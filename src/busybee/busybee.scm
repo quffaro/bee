@@ -124,6 +124,63 @@
 	[(list sym hsh x ...) x]
 	[_ '()])))
 
+;; (map-delim '(1 2 3 2) (lambda (x) (+ x 1)) 2) 
+;; (map-delim '(1 2 2 2) (lambda (x) (+ x 1)) 2)
+
+(define (map-delim lst func cnd delim)
+  (cond
+	[(< (length lst) 3) lst]
+	[(and (eq? (car lst) delim) (not (eq? (cadr lst) delim)) (eq? (caddr lst) delim))
+	   (cons delim
+			 (cons (func (cadr lst))
+				   (map-delim (cddr lst) func delim)))]
+	[else (cons (car lst)
+				(map-delim (cdr lst) func delim))]))
+
+(define (wrap-p texpr)
+  `(p ,(mhash) ,@texpr))
+
+;; should we parse text as (txt "We can (b mhash() "embolden") or ...)
+
+;; this doesn't apply to `root` out of luck. basically the first chunk before delimiters is ignored.
+
+(define (map-between lst #:func (func identity) #:delim (delim '(NEWLINE NEWLINE)))
+  (define (delim? lst)
+	(let [(l (length delim))]
+	  (if (< (length lst) l) #f (equal? (take lst l) delim))))
+  (let loop ([lst lst] [in-segment #f] [acc '()])
+	(cond
+	  [(null? lst) (if in-segment
+           (reverse (cons (func (reverse in-segment)) acc))
+           (reverse acc))]
+	  ;; wrap it up
+	  [(delim? lst)
+	     (if in-segment
+		   (loop (drop lst (length delim)) '() (append delim (cons (func (reverse in-segment)) acc)))
+		   (loop (drop lst (length delim)) '() (append delim acc)))]
+	  [in-segment
+		(loop (cdr lst) (cons (car lst) in-segment) acc)]
+	  [else
+		(loop (cdr lst) #f (cons (car lst) acc))])))
+
+; (define (map-between foo lst)
+;   (let loop ([lst lst] [in-segment #f] [acc '()])
+;     (cond
+;       [(null? lst)
+;        (reverse acc)]
+;       [(eq? (car lst) 'NEWLINE)
+;        (if in-segment
+;            (loop (cdr lst) '() (cons 'NEWLINE (append (reverse (map foo in-segment)) acc)))
+;            (loop (cdr lst) '() (cons 'NEWLINE acc)))]
+;       [in-segment
+;        (loop (cdr lst) (cons (car lst) in-segment) acc)]
+;       [else
+;        (loop (cdr lst) #f (cons (car lst) acc))])))
+
+(define (decode-paragraphs texpr)
+  (map-between texpr #:func wrap-p #:delim '(NEWLINE NEWLINE)))
+
+
 (define (root-texpr? texpr)
   (if (texpr? texpr)
 	(eq? (head texpr) 'root)) #f)
@@ -140,6 +197,7 @@
 
 (define (texpr->tgt texpr)
   ;; use texpr? function
+  (displayln texpr)
   (cond
 	[(void? texpr) '()]
 	[(empty? texpr) texpr]
@@ -224,4 +282,5 @@
 
 (define (render tgt txt)
   (parameterize ([target tgt])
-	(flatten-txt-expr (texpr->tgt (parse txt)))))
+	(displayln (decode-paragraphs (parse txt)))
+	(flatten-txt-expr (texpr->tgt (decode-paragraphs (parse txt))))))
