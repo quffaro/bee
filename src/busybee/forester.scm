@@ -1,3 +1,6 @@
+(define-tag (p tree) (attrs els)
+  `(txt "p{" ,@els "}"))
+
 (define-tag (b tree) (attrs els)
   `(txt "*" ,@els "*"))
 
@@ -21,4 +24,7 @@
 
 ;; because of the awkwardness defining 
 (define-tag (transclude tree) (attrs els)
-  `(txt ,@els)) 
+  `(txt ,@els))
+
+(define-tag (root tree) (attrs els)
+  `(txt ,@els))

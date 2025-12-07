@@ -72,6 +72,8 @@
      (cond [(empty? chars) (values (list->string (reverse acc)) '())]
            ; [(char-whitespace? (car chars)) 
            ;  (values (list->string (reverse acc)) chars)]
+		   [(char=? (car chars) #\newline)
+			(values (list->string (reverse acc)) chars)]
            [(char-delimiter? (car chars))
             (values (list->string (reverse acc)) chars)]
 		   [(char=? (car chars) #\◊)
@@ -136,6 +138,7 @@
            (lambda () (read-braces-string (cdddr chars)))
            (lambda (content rest)
              (tokenize-loop rest (cons (list 'LATEX content) acc))))]
+		;; read the input literally
 		[(and (>= (length chars) 4)
 		   (char=? (car chars) #\◊)
 		   (char=? (cadr chars) #\p)
