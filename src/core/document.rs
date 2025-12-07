@@ -25,6 +25,8 @@ impl DocumentEngine {
         engine.run(format!(r"{}", latex));
         let html = include_str!("../busybee/html.scm");
         engine.run(format!(r"{}", html));
+        let forester = include_str!("../busybee/forester.scm");
+        engine.run(format!(r"{}", forester));
         Self {
             engine: Some(engine),
         }
