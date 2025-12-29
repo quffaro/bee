@@ -27,8 +27,6 @@
 	  (char=? c #\() (char=? c #\))
       (char=? c #\[) (char=? c #\])))
  
-;; TODO replace with Newline(n)
-
 (define (skip-whitespace chars)
   (cond [(null? chars) '()]
         ; [(char-whitespace? (car chars)) 
@@ -72,6 +70,8 @@
      (cond [(empty? chars) (values (list->string (reverse acc)) '())]
            ; [(char-whitespace? (car chars)) 
            ;  (values (list->string (reverse acc)) chars)]
+		   [(char=? (car chars) #\newline)
+			(values (list->string (reverse acc)) chars)]
            [(char-delimiter? (car chars))
             (values (list->string (reverse acc)) chars)]
 		   [(char=? (car chars) #\◊)
@@ -136,6 +136,7 @@
            (lambda () (read-braces-string (cdddr chars)))
            (lambda (content rest)
              (tokenize-loop rest (cons (list 'LATEX content) acc))))]
+		;; read the input literally
 		[(and (>= (length chars) 4)
 		   (char=? (car chars) #\◊)
 		   (char=? (cadr chars) #\p)
@@ -236,7 +237,8 @@
     (cond
 	  [(empty? tokens)
 	    (values '() tokens)]
-      ;; case 1: command [kwargs] { content }
+      
+	  ;; case 1: command [kwargs] { content }
       [(and (not (null? tokens)) (eq? (car tokens) 'LBRACKET))
        (call-with-values
          (lambda () (parse-kwargs (cdr tokens)))
@@ -253,7 +255,8 @@
 					 [else
 				   (values `(,head ,kwargs ,@content) tokens)])))
                (values (list head kwargs '()) '()))))]
-      ;; case 2: command { content }
+      
+	  ;; case 2: command { content }
       [(and (not (null? tokens)) (eq? (car tokens) 'LBRACE))
        (call-with-values
          (lambda () (parse-loop (cdr tokens)))
